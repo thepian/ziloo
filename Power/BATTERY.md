@@ -21,3 +21,7 @@ As an example of the type of battery that may be connected;
 * Discharge max 1A
 
 Alternately it may be connected to one or more [NCR18650B](https://www.aliexpress.com/item/32887423130.html?spm=a2g0s.9042311.0.0.27424c4ddGGo0m) in parallel.
+
+
+[Flat Cell 4000mAh](https://www.ebay.com/itm/123073376529)
+[Order](https://www.ebay.com/vod/FetchOrderDetails?ViewPaymentStatus&purchaseOrderId=140000636472314)
