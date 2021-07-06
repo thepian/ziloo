@@ -1,0 +1,3 @@
+This is /home in the docker container
+
+It has a `build` and `dist` folder for the outputs.

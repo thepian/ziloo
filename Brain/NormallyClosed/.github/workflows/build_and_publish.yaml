@@ -1,0 +1,188 @@
+name: build and publish
+
+on:
+  push:
+    branches:
+      - trunk
+    tags:
+      - '*'
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+          components: rustfmt
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo fmt
+        with:
+          command: fmt
+          args: -- --check
+
+  debug_build_and_checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: stable
+          profile: minimal
+          components: clippy
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo build
+        with:
+          command: build
+          args: --no-default-features
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo test
+        with:
+          command: test
+          args: --no-default-features
+
+      - uses: actions-rs/clippy-check@v1.0.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  release_armv7_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: stable
+          profile: minimal
+          target: armv7-unknown-linux-musleabihf
+
+      - run: sudo apt-get install binutils-arm-linux-gnueabihf
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo build
+        with:
+          command: build
+          args: --release --target armv7-unknown-linux-musleabihf
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo publish --dry-run
+        with:
+          command: publish
+          args: --dry-run
+
+      - run: cp target/armv7-unknown-linux-musleabihf/release/normally-closed normally-closed-armv7
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: normally-closed-armv7
+
+  release_armv6_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: stable
+          profile: minimal
+          target: arm-unknown-linux-musleabi
+
+      - run: sudo apt-get install binutils-arm-linux-gnueabihf
+
+      - uses: actions-rs/cargo@v1.0.3
+        name: cargo build
+        with:
+          command: build
+          args: --release --target arm-unknown-linux-musleabi
+
+      - run: cp target/arm-unknown-linux-musleabi/release/normally-closed normally-closed-armv6
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: normally-closed-armv6
+
+  publish:
+    runs-on: ubuntu-latest
+
+    needs:
+      - rustfmt
+      - debug_build_and_checks
+      - release_armv7_build
+      - release_armv6_build
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - uses: crazy-max/ghaction-docker-meta@v1
+        id: docker_meta
+        with:
+          images: |
+            jakewharton/normally-closed
+            ghcr.io/jakewharton/normally-closed
+          tag-semver: |
+            {{version}}
+            {{major}}
+            {{major}}.{{minor}}
+
+      - uses: docker/login-action@v1.9.0
+        with:
+          username: jakewharton
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - uses: docker/login-action@v1.9.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1.0.3
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        with:
+          command: publish
+
+      - uses: docker/setup-buildx-action@v1
+
+      - uses: docker/build-push-action@v2.5.0
+        with:
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          platforms: linux/arm/v7,linux/arm/v6
+
+      - uses: ffurrer2/extract-release-notes@v1.7.0
+        id: release_notes
+        if: startsWith(github.ref, 'refs/tags/')
+
+      - uses: actions/download-artifact@v2
+        if: startsWith(github.ref, 'refs/tags/')
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body: ${{ steps.release_notes.outputs.release_notes }}
+          files: |
+            binaries/normally-closed-armv7
+            binaries/normally-closed-armv6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
