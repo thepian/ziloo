@@ -6,7 +6,8 @@ It will be charged via USB Power potentially with fast charging.
 
 As an example of the type of battery that may be connected;
 
-![853865 2500mah](./l-1500.jpg)
+![853865 2500mah](./images/s-l500.jpg)
+![3.7V for Canera PAD GPS 523450](./images/Screenshot_3.png)
 
 * Battery type: Lithium ion
 * [853865 2500mah](https://www.ebay.com/itm/3-wire-853865-3-7V-2500mAh-Polymer-Li-Lithium-cell-thermistor-For-GPS-Tablet-PC/183409437734?_trkparms=aid%3D1110006%26algo%3DHOMESPLICE.SIM%26ao%3D1%26asc%3D20190606144518%26meid%3D3ce42517976847e8bed89cda9b05ede5%26pid%3D101072%26rk%3D2%26rkt%3D12%26sd%3D111732839791%26itm%3D183409437734%26pmt%3D0%26noa%3D1%26pg%3D2546172%26algv%3DDefaultOrganic%26brand%3DUnbranded&_trksid=p2546172.c101072.m2109)
